@@ -1,49 +1,47 @@
 #!/usr/bin/env bash
 
 DIR=$(pwd)
-CLOUDFORMATION_TEMPLATE=$DIR/peof-ecr.yml
-STACK_NAME_PREFIX=peof
-STACK_NAME_SUFFIX=container-repo
+ENVIRONMENT_USERS_TEMPLATE=$DIR/1-environment-users.yml
 
 deploy(){
 	aws --profile pvitic-administrator \
 	    --region eu-central-1 \
 	    --debug cloudformation deploy \
-        --stack-name $1 \
-        --template $CLOUDFORMATION_TEMPLATE \
-        --parameter-overrides PEOFRepositoryName=$2
+      --stack-name $1 \
+      --template $ENVIRONMENT_USERS_TEMPLATE \
+      --capabilities CAPABILITY_NAMED_IAM \
+  && aws cloudformation describe-stacks \
+      --stack-name $1 | \
+      jq -r '.Stacks[0].Outputs[]'
 }
 
 delete(){
 	aws --profile pvitic-administrator \
 	    --region eu-central-1 \
 	    --debug cloudformation delete-stack \
-        --stack-name $1
+      --stack-name $1
 }
 
 
 if [ $# -ne 2 ]; then
-  echo 1>&2 "Usage: $0 Option Project"
+  echo 1>&2 "Usage: $0 environment action"
   exit 3
 fi
 
-OPTION=$1
-PROJECT=$2
-STACK_NAME=$STACK_NAME_PREFIX-$PROJECT-$STACK_NAME_SUFFIX
-REPOSITORY_NAME=$STACK_NAME_PREFIX-$PROJECT
+ENVIRONMENT_NAME=$1
+ACTION=$2
 
-case $OPTION in
+case $ACTION in
 deploy)
-  echo "Deploying ${STACK_NAME} stack"
-  deploy "$STACK_NAME" "$REPOSITORY_NAME"
+  echo "Deploying ${ENVIRONMENT_NAME} environment"
+  deploy "$ENVIRONMENT_NAME"
   ;;
 delete)
-  echo "Deleting ${STACK_NAME} stack"
-  delete "$STACK_NAME"
+  echo "Deleting ${ENVIRONMENT_NAME} environment"
+  delete "$ENVIRONMENT_NAME"
   ;;
 *)
-    echo "Did you forget something!! [ deploy | delete ]"
-    echo "-- Options --"
-    echo "deploy : Deploys stack"
-    echo "delete : Deletes stack"
+    echo "-- Action Options --"
+    echo "deploy : Deploys environment"
+    echo "delete : Deletes environment"
 esac
