@@ -13,4 +13,13 @@ Let's say that we have a **functional automated and manual testing stage** in ou
     1. Stubs in place of services external to the domain
     2. Automated test executor
     3. Consoles that allow access to backing services, e.g. database or queue consoles
+    
+The template provided at [AWS Labs][1] suggests a deployment architecture with load balancer. Setting up a load balancer requires additional AWS resources such as
+* AWS::ElasticLoadBalancingV2::LoadBalancer
+* AWS::ElasticLoadBalancingV2::TargetGroup
+* AWS::ElasticLoadBalancingV2::Listener
+
+This seems to be redundent for a temporary testing environment and slightly contradicts with the constraint 2 above, although setting up of the environment can be started earlier in the pipeline, in parallel tasks, to save time. Nevertheless, in this exercise we will try to create a testing environment without load balanders to see if it can serve the purpose.
+
+[1]: https://github.com/awslabs/aws-cloudformation-templates/tree/master/aws/services/ECS/FargateLaunchType
 
