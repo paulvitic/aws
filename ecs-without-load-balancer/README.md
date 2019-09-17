@@ -24,7 +24,7 @@ This seems to be redundent for a temporary environment and slightly contradicts 
 I will be using CloudFormation templates as infrastructure as code(IaC) and running them with a shell script *environment.sh*. The script utilizes AWS CLI to manage the CloudFormation stacks. What I already have is:
 1. An AWS account
 2. An AWS account user that has administrative privilidges
-3. The aws_access_key_id and aws_secret_access_key of this user set at the *~/.aws/credentials* file of my development machine.
+3. The *aws_access_key_id* and *aws_secret_access_key* of this user set at the *~/.aws/credentials* file of my development machine.
 
 [1]: https://github.com/awslabs/aws-cloudformation-templates/tree/master/aws/services/ECS/FargateLaunchType
 
