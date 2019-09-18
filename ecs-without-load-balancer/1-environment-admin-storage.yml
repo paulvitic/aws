@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Environment admin user and the storage.'
+Resources:
+  EnvironmentAdminUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Join ['', [!Ref "AWS::StackName", "-admin" ]]
+  EnvironmentAdminUserKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref 'EnvironmentAdminUser'
+  EnvironmentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ['', [!Ref "AWS::StackName", "-bucket" ]]
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+            Status: Enabled
+          - NoncurrentVersionExpirationInDays: 1
+            Status: Enabled
+  EnvironmentBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref EnvironmentBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Principal:
+              AWS:
+                - !GetAtt 'EnvironmentAdminUser.Arn'
+            Action:
+              - 's3:PutObject*'
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub '${EnvironmentBucket.Arn}/*'
+Outputs:
+  StackName:
+    Description: 'Stack name.'
+    Value: !Sub '${AWS::StackName}'
+  AccessKey:
+    Value: !Ref 'EnvironmentAdminUserKey'
+    Description: AWSAccessKeyId of new user
+  SecretKey:
+    Value: !GetAtt [EnvironmentAdminUserKey, SecretAccessKey]
+    Description: AWSSecretAccessKey of new user
+  BucketName:
+    Description: 'Name of the bucket'
+    Value: !Ref EnvironmentBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+  BucketDomainName:
+    Description: 'Domain name of the bucket.'
+    Value: !GetAtt 'EnvironmentBucket.DomainName'
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketDomainName'
+  BucketURL:
+    Description: 'URL of the bucket.'
+    Value: !GetAtt 'EnvironmentBucket.WebsiteURL'
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketURL'

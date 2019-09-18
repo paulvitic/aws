@@ -1,18 +1,28 @@
 #!/usr/bin/env bash
 
 DIR=$(pwd)
-ENVIRONMENT_USERS_TEMPLATE=$DIR/1-environment-users.yml
+ENV_ADMIN_STORAGE_TEMPLATE=$DIR/1-environment-admin-storage.yml
 
 deploy(){
 	aws --profile pvitic-administrator \
 	    --region eu-central-1 \
 	    --debug cloudformation deploy \
       --stack-name $1 \
-      --template $ENVIRONMENT_USERS_TEMPLATE \
+      --template $ENV_ADMIN_STORAGE_TEMPLATE \
       --capabilities CAPABILITY_NAMED_IAM \
-  && aws cloudformation describe-stacks \
+  && BUCKET_NAME="$(aws cloudformation describe-stacks \
       --stack-name $1 | \
-      jq -r '.Stacks[0].Outputs[]'
+      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue')" \
+  && AWS_ACCESS_KEY_ID="$(aws cloudformation describe-stacks \
+      --stack-name $1 | \
+      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "AccessKey") | .OutputValue')" \
+  && AWS_SECRET_ACCESS_KEY="$(aws cloudformation describe-stacks \
+      --stack-name $1 | \
+      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "SecretKey") | .OutputValue')" \
+  && export AWS_ACCESS_KEY_ID \
+  && export AWS_SECRET_ACCESS_KEY \
+  && aws sts get-caller-identity \
+  && aws --debug s3 cp . s3://$BUCKET_NAME/ --recursive --exclude "*" --include "*.yml"
 }
 
 delete(){

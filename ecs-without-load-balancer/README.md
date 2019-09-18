@@ -26,13 +26,20 @@ I will be using CloudFormation templates as infrastructure as code(IaC) and runn
 2. An AWS account user that has administrative privilidges
 3. The *aws_access_key_id* and *aws_secret_access_key* of this user set at the *~/.aws/credentials* file of my development machine.
 
-* Create the environment administrator
-* Create the S3 bucket
-* Create the Docker repositories
-* Create the cluster
-* Create the services
+* Create the environment administrator with global administrator credentials
+* Switch to environment administrator, create the S3 bucket and upload CloudFormation templates to S3
+* Upload CloudFormation templates to S3 and run them which should
+    * Create the Docker repositories 
+    * Build and push Docker images
+    * Create the cluster
+    * Create the services
 
-see https://docs.aws.amazon.com/en_pv/AWSCloudFormation/latest/UserGuide/using-cfn-stack-exports.html
+### References
+* Documentation about [nested stacks][2] 
+* See how you can read [CloudFormation output][3]
 
 [1]: https://github.com/awslabs/aws-cloudformation-templates/tree/master/aws/services/ECS/FargateLaunchType
+[2]: https://docs.aws.amazon.com/en_pv/AWSCloudFormation/latest/UserGuide/using-cfn-stack-exports.html
+[3]: https://advancedweb.hu/2019/05/07/cf_workflows/
+
 
