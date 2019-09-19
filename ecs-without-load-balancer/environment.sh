@@ -10,19 +10,16 @@ deploy(){
       --stack-name $1 \
       --template $ENV_ADMIN_STORAGE_TEMPLATE \
       --capabilities CAPABILITY_NAMED_IAM \
-  && BUCKET_NAME="$(aws cloudformation describe-stacks \
-      --stack-name $1 | \
-      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue')" \
-  && AWS_ACCESS_KEY_ID="$(aws cloudformation describe-stacks \
-      --stack-name $1 | \
-      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "AccessKey") | .OutputValue')" \
-  && AWS_SECRET_ACCESS_KEY="$(aws cloudformation describe-stacks \
-      --stack-name $1 | \
-      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "SecretKey") | .OutputValue')" \
-  && export AWS_ACCESS_KEY_ID \
-  && export AWS_SECRET_ACCESS_KEY \
+  && echo "export AWS_ACCESS_KEY_ID=$(aws cloudformation describe-stacks --stack-name $1 | \
+      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "AccessKey") | .OutputValue')" >> .env \
+  && echo "export AWS_SECRET_ACCESS_KEY=$(aws cloudformation describe-stacks --stack-name $1 | \
+      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "SecretKey") | .OutputValue')" >> .env \
+  && echo "export BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $1 | \
+    jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue')" >> .env \
+  && source .env \
   && aws sts get-caller-identity \
   && aws --debug s3 cp . s3://$BUCKET_NAME/ --recursive --exclude "*" --include "*.yml"
+  rm .env
 }
 
 delete(){
