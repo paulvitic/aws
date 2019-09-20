@@ -1,14 +1,48 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Environment admin user and the storage.'
+Parameters:
+  StackRootName:
+    Type: String
+
 Resources:
   EnvironmentAdminUser:
     Type: AWS::IAM::User
     Properties:
-      UserName: !Join ['', [!Ref "AWS::StackName", "-admin" ]]
+      UserName: !Join ['', [!Ref "StackRootName", "-admin" ]]
   EnvironmentAdminUserKey:
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref 'EnvironmentAdminUser'
+  StackAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ['', [!Ref "AWS::StackName", "-admin-policy" ]]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "cloudformation:Describe*"
+              - "cloudformation:List*"
+              - "cloudformation:Get*"
+              - "cloudformation:Create*"
+              - "cloudformation:Execute*"
+            Resource: !Join ['', ["arn:aws:cloudformation:eu-central-1:332197038802:stack/", !Ref "StackRootName", "*" ]]
+          - Effect: "Allow"
+            Action:
+              - "ecr:CreateRepository"
+              - "ecr:GetAuthorizationToken"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "ecr:DescribeRepositories"
+              - "ecr:SetRepositoryPolicy"
+              - "ecr:PutLifecyclePolicy"
+              - "ecr:DeleteRepository"
+            Resource: !Join ['', ["arn:aws:ecr:eu-central-1:332197038802:repository/", !Ref "StackRootName", "*" ]]
+      Users:
+        - Ref: "EnvironmentAdminUser"
+
   EnvironmentBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -35,10 +69,15 @@ Resources:
               - 's3:GetObject'
             Effect: Allow
             Resource: !Sub '${EnvironmentBucket.Arn}/*'
+
 Outputs:
   StackName:
     Description: 'Stack name.'
     Value: !Sub '${AWS::StackName}'
+  EnvironmentAdminUserArn:
+    Value: !GetAtt EnvironmentAdminUser.Arn
+    Export:
+      Name: !Sub '${StackRootName}-EnvironmentAdminUserArn'
   AccessKey:
     Value: !Ref 'EnvironmentAdminUserKey'
     Description: AWSAccessKeyId of new user
@@ -49,14 +88,14 @@ Outputs:
     Description: 'Name of the bucket'
     Value: !Ref EnvironmentBucket
     Export:
-      Name: !Sub '${AWS::StackName}-BucketName'
+      Name: !Sub '${StackRootName}-BucketName'
   BucketDomainName:
     Description: 'Domain name of the bucket.'
     Value: !GetAtt 'EnvironmentBucket.DomainName'
     Export:
-      Name: !Sub '${AWS::StackName}-BucketDomainName'
+      Name: !Sub '${StackRootName}-BucketDomainName'
   BucketURL:
     Description: 'URL of the bucket.'
     Value: !GetAtt 'EnvironmentBucket.WebsiteURL'
     Export:
-      Name: !Sub '${AWS::StackName}-BucketURL'
+      Name: !Sub '${StackRootName}-BucketURL'
