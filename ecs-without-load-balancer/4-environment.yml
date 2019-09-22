@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  StackRootName:
+    Type: String
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        Fn::Join:
+          - ''
+          - - 'https://'
+            - Fn::ImportValue:
+                !Sub '${StackRootName}-BucketDomainName'
+            - '/'
+            - '6-network.yml'
+      Parameters:
+        ECSAMI: "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"

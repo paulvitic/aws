@@ -52,3 +52,5 @@ Outputs:
     Value: !Join ['', [!Ref 'AWS::AccountId', '.dkr.ecr.', !Ref 'AWS::Region', '.', !Ref 'AWS::URLSuffix', '/', !Ref 'ImageRepositoryName']]
     Export:
       Name: !Sub '${StackRootName}-ContainerRepoURI'
+  ContainerRepoConsoleURL:
+    Value: !Join ['', ['https://', !Ref 'AWS::Region', '.console.', !Ref 'AWS::URLSuffix', '/ecr/repositories/', !Ref 'ImageRepositoryName', '/?']]

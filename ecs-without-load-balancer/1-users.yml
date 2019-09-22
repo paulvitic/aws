@@ -27,7 +27,15 @@ Resources:
               - "cloudformation:Get*"
               - "cloudformation:Create*"
               - "cloudformation:Execute*"
+              - "cloudformation:DeleteStack"
             Resource: !Join ['', ["arn:aws:cloudformation:eu-central-1:332197038802:stack/", !Ref "StackRootName", "*" ]]
+          - Effect: "Allow"
+            Action:
+              - "s3:CreateBucket"
+              - "s3:DeleteBucket"
+              - "s3:PutLifecycleConfiguration"
+              - "s3:PutBucketPolicy"
+            Resource: "*"
           - Effect: "Allow"
             Action:
               - "ecr:CreateRepository"
@@ -36,39 +44,23 @@ Resources:
           - Effect: "Allow"
             Action:
               - "ecr:DescribeRepositories"
+              - "ecr:DescribeImages"
               - "ecr:SetRepositoryPolicy"
               - "ecr:PutLifecyclePolicy"
               - "ecr:DeleteRepository"
+              - "ecr:BatchDeleteImage"
             Resource: !Join ['', ["arn:aws:ecr:eu-central-1:332197038802:repository/", !Ref "StackRootName", "*" ]]
+            # necessary to read EC2 image id
+          - Effect: "Allow"
+            Action:
+              - "ssm:GetParameters"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "ec2:Describe*"
+            Resource: "*"
       Users:
         - Ref: "EnvironmentAdminUser"
-
-  EnvironmentBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Join ['', [!Ref "AWS::StackName", "-bucket" ]]
-      LifecycleConfiguration:
-        Rules:
-          - AbortIncompleteMultipartUpload:
-              DaysAfterInitiation: 7
-            Status: Enabled
-          - NoncurrentVersionExpirationInDays: 1
-            Status: Enabled
-  EnvironmentBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref EnvironmentBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Principal:
-              AWS:
-                - !GetAtt 'EnvironmentAdminUser.Arn'
-            Action:
-              - 's3:PutObject*'
-              - 's3:GetObject'
-            Effect: Allow
-            Resource: !Sub '${EnvironmentBucket.Arn}/*'
 
 Outputs:
   StackName:
@@ -84,18 +76,3 @@ Outputs:
   SecretKey:
     Value: !GetAtt [EnvironmentAdminUserKey, SecretAccessKey]
     Description: AWSSecretAccessKey of new user
-  BucketName:
-    Description: 'Name of the bucket'
-    Value: !Ref EnvironmentBucket
-    Export:
-      Name: !Sub '${StackRootName}-BucketName'
-  BucketDomainName:
-    Description: 'Domain name of the bucket.'
-    Value: !GetAtt 'EnvironmentBucket.DomainName'
-    Export:
-      Name: !Sub '${StackRootName}-BucketDomainName'
-  BucketURL:
-    Description: 'URL of the bucket.'
-    Value: !GetAtt 'EnvironmentBucket.WebsiteURL'
-    Export:
-      Name: !Sub '${StackRootName}-BucketURL'
