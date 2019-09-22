@@ -78,11 +78,50 @@ deleteStorage() {
   && aws --region eu-central-1 cloudformation wait stack-delete-complete --stack-name $STACK
 }
 
+createContainerRepos(){
+  TEMPLATE=$DIR/3-$CONTAINERS.yml
+  STACK=$1-$CONTAINERS
+
+  aws cloudformation deploy \
+      --stack-name $STACK \
+      --template $TEMPLATE \
+      --parameter-overrides StackRootName=$1 ImageRepositoryName=$1-mongodb \
+  && pushImage "$STACK"
+}
+
+deleteContainerRepos(){
+  STACK=$1-$CONTAINERS
+
+  IMAGES=$(aws ecr describe-images --repository-name $1-mongodb --output json | jq '.[]' | jq '.[]' | jq -r '.imageDigest')
+  for IMAGE in ${IMAGES[*]}; do
+    echo "Deleting $IMAGE"
+    aws ecr batch-delete-image --repository-name $1-mongodb --image-ids imageDigest=$IMAGE
+  done
+
+  echo deleteing stack $STACK
+  aws --region eu-central-1 cloudformation delete-stack --stack-name $STACK \
+  && aws --region eu-central-1 cloudformation wait stack-delete-complete --stack-name $STACK
+}
+
+pushImage(){
+  IMAGE_NAME=$(aws cloudformation describe-stacks --stack-name $1 | \
+    jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "ContainerRepoURI") | .OutputValue') \
+  && cd mongodb \
+  && echo "logging into AWS Container repository" \
+  && $(aws ecr get-login --region eu-central-1 --no-include-email) \
+  && echo "building image ${IMAGE_NAME}" \
+  && docker build -t ${IMAGE_NAME} . \
+  && echo "pushing image ${IMAGE_NAME}" \
+  && docker push ${IMAGE_NAME} \
+  && cd ../
+}
+
 deploy(){
   START=`date +%s`
   createUsers "$1" \
   && loginEvironmentAdmin "$1" \
   && createStorage "$1" \
+  && createContainerRepos "$1" \
   && END=`date +%s` \
   && echo $1 deployed in $((END-START)) seconds
 
@@ -93,6 +132,7 @@ delete(){
   START=`date +%s`
 
   loginEvironmentAdmin "$1" \
+  && deleteContainerRepos "$1" \
   && deleteStorage "$1" \
   && deleteUsers "$1" \
   && END=`date +%s` \
@@ -102,39 +142,9 @@ delete(){
 }
 
 #deploy(){
-#  SEED_STACK=$1-seed
-#	aws --profile pvitic-administrator \
-#	    --region eu-central-1 \
-#	    --debug cloudformation deploy \
-#      --stack-name $SEED_STACK \
-#      --template $SEED_TEMPLATE \
-#      --capabilities CAPABILITY_NAMED_IAM \
-#      --parameter-overrides StackRootName=$1 \
-#  && echo "export AWS_ACCESS_KEY_ID=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | \
-#      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "AccessKey") | .OutputValue')" >> .env \
-#  && echo "export AWS_SECRET_ACCESS_KEY=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | \
-#      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "SecretKey") | .OutputValue')" >> .env \
-#  && BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | \
-#    jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue') \
-#  && source .env \
-#  && aws sts get-caller-identity \
-#  && aws --debug s3 cp . s3://$BUCKET_NAME/ --recursive --exclude "*" --include "*.yml"
-#
+
 #  CONTAINERS_STACK=$1-containers
-#  aws --debug cloudformation deploy \
-#      --stack-name $CONTAINERS_STACK \
-#      --template $CONTAINERS_TEMPLATE \
-#      --parameter-overrides StackRootName=$1 ImageRepositoryName=$1-mongodb \
-#  && IMAGE_NAME=$(aws cloudformation describe-stacks --stack-name $CONTAINERS_STACK | \
-#    jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "ContainerRepoURI") | .OutputValue') \
-#  && cd mongodb \
-#  && echo "logging into AWS Container repository" \
-#  && $(aws ecr get-login --region eu-central-1 --no-include-email) \
-#  && echo "building image ${IMAGE_NAME}" \
-#  && docker build -t ${IMAGE_NAME} . \
-#  && echo "pushing image ${IMAGE_NAME}" \
-#  && docker push ${IMAGE_NAME} \
-#  && cd ../
+#
 #
 #  ENVIRONMENT_STACK=$1-environment
 #  aws --debug cloudformation deploy \
@@ -144,35 +154,7 @@ delete(){
 #
 #  rm $DIR/.env
 #}
-#
-#delete(){
-#  SEED_STACK=$1-seed
-#  CONTAINERS_STACK=$1-containers
-#
-#  echo "export AWS_ACCESS_KEY_ID=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | \
-#      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "AccessKey") | .OutputValue')" >> .env \
-#  && echo "export AWS_SECRET_ACCESS_KEY=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | \
-#      jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "SecretKey") | .OutputValue')" >> .env
-#  source .env
-#
-#  IMAGES=$(aws ecr describe-images --repository-name $1-mongodb --output json | jq '.[]' | jq '.[]' | jq -r '.imageDigest')
-#  for IMAGE in ${IMAGES[*]}; do
-#    echo "Deleting $IMAGE"
-#    aws ecr batch-delete-image --repository-name $1-mongodb --image-ids imageDigest=$IMAGE
-#  done
-#
-#  echo deleteing stack $CONTAINERS_STACK
-#  aws --region eu-central-1 cloudformation delete-stack --stack-name $CONTAINERS_STACK
-#
-#  BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $SEED_STACK | jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue')
-#  echo emtying bucket $BUCKET_NAME
-#  aws s3 rm s3://$BUCKET_NAME --recursive
-#
-#  echo deleteing stack $SEED_STACK
-#  aws --region eu-central-1 cloudformation delete-stack --stack-name $SEED_STACK
-#
-#  rm $DIR/.env
-#}
+
 
 
 #if [ $# -ne 1 ]; then
