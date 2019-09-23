@@ -116,12 +116,31 @@ pushImage(){
   && cd ../
 }
 
+createEnvironment(){
+  # TODO use remote repo to pull template
+  TEMPLATE=$DIR/4-$ENVIRONMENT.yml
+  STACK=$1-$ENVIRONMENT
+
+  aws cloudformation deploy \
+      --stack-name $STACK \
+      --template $TEMPLATE \
+      --parameter-overrides StackRootName=$1
+}
+
+deleteEnvironment(){
+  STACK=$1-$ENVIRONMENT
+  echo deleteing stack $STACK
+  aws --region eu-central-1 cloudformation delete-stack --stack-name $STACK \
+  && aws --region eu-central-1 cloudformation wait stack-delete-complete --stack-name $STACK
+}
+
 deploy(){
   START=`date +%s`
   createUsers "$1" \
   && loginEvironmentAdmin "$1" \
   && createStorage "$1" \
   && createContainerRepos "$1" \
+  && createEnvironment "$1" \
   && END=`date +%s` \
   && echo $1 deployed in $((END-START)) seconds
 
@@ -132,6 +151,7 @@ delete(){
   START=`date +%s`
 
   loginEvironmentAdmin "$1" \
+  && deleteEnvironment "$1" \
   && deleteContainerRepos "$1" \
   && deleteStorage "$1" \
   && deleteUsers "$1" \
@@ -140,22 +160,6 @@ delete(){
 
   rm $DIR/.env
 }
-
-#deploy(){
-
-#  CONTAINERS_STACK=$1-containers
-#
-#
-#  ENVIRONMENT_STACK=$1-environment
-#  aws --debug cloudformation deploy \
-#      --stack-name $ENVIRONMENT_STACK \
-#      --template $ENVIRONMENT_TEMPLATE \
-#      --parameter-overrides StackRootName=$1
-#
-#  rm $DIR/.env
-#}
-
-
 
 #if [ $# -ne 1 ]; then
 #  echo 1>&2 "Usage: $0 environment action"

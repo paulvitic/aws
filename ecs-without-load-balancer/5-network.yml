@@ -1,9 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Parameters:
-  ECSAMI:
-    Description: AMI ID
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
 
 Resources:
   Vpc:
@@ -46,3 +41,8 @@ Resources:
     Properties:
       SubnetId: !Ref PubSubnet
       RouteTableId: !Ref RouteViaInternetGateway
+
+Outputs:
+  NetworkVpc:
+    Description: 'The Vpc Resource'
+    Value: !Ref Vpc
