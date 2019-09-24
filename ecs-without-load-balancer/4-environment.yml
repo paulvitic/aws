@@ -4,7 +4,7 @@ Parameters:
     Type: String
 
 Resources:
-  NetworkStack:
+  Network:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:
@@ -15,9 +15,8 @@ Resources:
                 !Sub '${StackRootName}-BucketDomainName'
             - '/'
             - '5-network.yml'
-  ClusterStack:
+  Cluster:
     Type: AWS::CloudFormation::Stack
-    DependsOn: NetworkStack
     Properties:
       TemplateURL:
         Fn::Join:
@@ -29,11 +28,12 @@ Resources:
             - '6-cluster.yml'
       Parameters:
         ECSAMI: "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
-        VpcResource: !GetAtt 'Outputs.NetworkVpc'
+        NetworkVpc: !GetAtt 'Network.Outputs.Vpc'
+        NetworkPubSubnet: !GetAtt 'Network.Outputs.PubSubnet'
 
-  ServicesStack:
+  Services:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ClusterStack
+    DependsOn: Cluster
     Properties:
       TemplateURL:
         Fn::Join:

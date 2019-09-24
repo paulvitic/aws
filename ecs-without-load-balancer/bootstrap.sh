@@ -2,6 +2,7 @@
 
 REGION=eu-central-1
 DIR=$(pwd)
+TEMPLATES_URL=""
 USERS=users
 STORAGE=storage
 CONTAINERS=containers
@@ -61,6 +62,10 @@ createStorage(){
   BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $STACK | \
     jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketName") | .OutputValue') \
   && aws s3 cp . s3://$BUCKET_NAME/ --recursive --exclude "*" --include "*.yml"
+
+  TEMPLATES_URL=$(aws cloudformation describe-stacks --stack-name $STACK | \
+    jq -r '.Stacks[0].Outputs[] | select(.OutputKey == "BucketDomainName") | .OutputValue') \
+  && echo You can pull templates from https://$TEMPLATES_URL
 
 }
 
@@ -124,6 +129,7 @@ createEnvironment(){
   aws cloudformation deploy \
       --stack-name $STACK \
       --template $TEMPLATE \
+      --capabilities CAPABILITY_IAM \
       --parameter-overrides StackRootName=$1
 }
 

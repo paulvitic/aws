@@ -43,6 +43,9 @@ Resources:
       RouteTableId: !Ref RouteViaInternetGateway
 
 Outputs:
-  NetworkVpc:
+  Vpc:
     Description: 'The Vpc Resource'
     Value: !Ref Vpc
+  PubSubnet:
+    Description: 'The public subnet'
+    Value: !Ref PubSubnet

@@ -13,7 +13,7 @@ Resources:
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref 'EnvironmentAdminUser'
-  StackAccessPolicy:
+  StackAdminPolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: !Join ['', [!Ref "AWS::StackName", "-admin-policy" ]]
@@ -22,13 +22,17 @@ Resources:
         Statement:
           - Effect: "Allow"
             Action:
-              - "cloudformation:Describe*"
-              - "cloudformation:List*"
-              - "cloudformation:Get*"
-              - "cloudformation:Create*"
-              - "cloudformation:Execute*"
-              - "cloudformation:DeleteStack"
-            Resource: !Join ['', ["arn:aws:cloudformation:eu-central-1:332197038802:stack/", !Ref "StackRootName", "*" ]]
+              - "cloudformation:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:cloudformation:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":stack/"
+                  - !Ref "StackRootName"
+                  - "*"
           - Effect: "Allow"
             Action:
               - "s3:CreateBucket"
@@ -43,13 +47,17 @@ Resources:
             Resource: "*"
           - Effect: "Allow"
             Action:
-              - "ecr:DescribeRepositories"
-              - "ecr:DescribeImages"
-              - "ecr:SetRepositoryPolicy"
-              - "ecr:PutLifecyclePolicy"
-              - "ecr:DeleteRepository"
-              - "ecr:BatchDeleteImage"
-            Resource: !Join ['', ["arn:aws:ecr:eu-central-1:332197038802:repository/", !Ref "StackRootName", "*" ]]
+              - "ecr:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:ecr:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":repository/"
+                  - !Ref "StackRootName"
+                  - "*"
             # necessary to read EC2 image id
           - Effect: "Allow"
             Action:
@@ -70,10 +78,90 @@ Resources:
               - "ec2:CreateRouteTable"
               - "ec2:DeleteRouteTable"
               - "ec2:AssociateRouteTable"
+              - "ec2:DisassociateRouteTable"
               - "ec2:ModifySubnetAttribute"
               - "ec2:CreateRoute"
               - "ec2:DeleteRoute"
+              - "ec2:CreateSecurityGroup"
+              - "ec2:DeleteSecurityGroup"
+              - "ec2:AuthorizeSecurityGroupIngress"
             Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "ecs:CreateCluster"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "ecs:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:ecs:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":cluster/"
+                  - !Ref "StackRootName"
+                  - "-environment-Cluster*"
+          - Effect: "Allow"
+            Action:
+              - "iam:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:iam::"
+                  - !Ref "AWS::AccountId"
+                  - ":role/"
+                  - !Ref "StackRootName"
+                  - "-environment-Cluster*"
+          - Effect: "Allow"
+            Action:
+              - "iam:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:iam::"
+                  - !Ref "AWS::AccountId"
+                  - ":instance-profile/"
+                  - !Ref "StackRootName"
+                  - "-environment-Cluster*"
+          - Effect: "Allow"
+            Action:
+              - "logs:DescribeLogGroups"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:logs:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":log-group*"
+          - Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:logs:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":log-group:"
+                  - !Ref "StackRootName"
+                  - "-environment-Cluster*"
+          - Effect: "Allow"
+            Action:
+              - "autoscaling:*"
+            Resource:
+              Fn::Join:
+                - ''
+                - - "arn:aws:autoscaling:"
+                  - !Ref "AWS::Region"
+                  - ":"
+                  - !Ref "AWS::AccountId"
+                  - ":launchConfiguration:*:launchConfigurationName/"
+                  - !Ref "StackRootName"
+                  - "-environment-Cluster*"
       Users:
         - Ref: "EnvironmentAdminUser"
 

@@ -4,9 +4,12 @@ Parameters:
     Description: AMI ID
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
-  VpcResource:
+  NetworkVpc:
     Description: Vpc
-    Type: AWS::EC2::VPC
+    Type: AWS::EC2::VPC::Id
+  NetworkPubSubnet:
+    Description: Public subnet
+    Type: AWS::EC2::Subnet::Id
 
 Resources:
   EC2Role:
@@ -73,7 +76,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the ECS hosts that run containers
-      VpcId: !Ref 'VpcResource'
+      VpcId: !Ref 'NetworkVpc'
       SecurityGroupIngress:
         # Allow access to from anywhere on the internet
         - CidrIp: 0.0.0.0/0
@@ -96,7 +99,7 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier:
-        - !Ref PubSubnet
+        - !Ref NetworkPubSubnet
       LaunchConfigurationName: !Ref EcsInstanceLaunchConfiguration
       MinSize: '1'
       MaxSize: '4'
