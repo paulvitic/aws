@@ -26,6 +26,7 @@ I will be using CloudFormation templates as infrastructure as code(IaC) and runn
 2. An AWS account user that has administrative privilidges
 3. The *aws_access_key_id* and *aws_secret_access_key* of this user set at the *~/.aws/credentials* file of my development machine.
 
+
 * Create the environment administrator with global administrator credentials
 * Switch to environment administrator, create the S3 bucket and upload CloudFormation templates to S3
 * Upload CloudFormation templates to S3 and run them which should
